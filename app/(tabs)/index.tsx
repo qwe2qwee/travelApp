@@ -83,7 +83,7 @@ export default function Index() {
           <View style={styles.iconContainer}>
             <Plane size={28} color="#6366f1" />
           </View>
-          <Text style={styles.title}>Travel Itinerary Planner</Text>
+          <Text style={styles.title}>Japan Travel OS</Text>
           <Text style={styles.subtitle}>
             Get a personalized day-by-day travel plan powered by AI
           </Text>

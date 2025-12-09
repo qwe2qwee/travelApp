@@ -125,7 +125,7 @@ const Auth = ({ navigation }: AuthProps) => {
               <View style={styles.iconContainer}>
                 <Plane size={32} color="#6366f1" />
               </View>
-              <Text style={styles.title}>Travel Itinerary Planner</Text>
+              <Text style={styles.title}>Japan Travel OS</Text>
               <Text style={styles.subtitle}>
                 Sign in to get personalized travel assistance
               </Text>
