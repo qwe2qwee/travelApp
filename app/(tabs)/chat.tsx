@@ -5,6 +5,7 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/hooks/useChat";
+import { router } from "expo-router";
 import { LogOut, MapPin, Trash2 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
@@ -60,7 +61,7 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
         style: "destructive",
         onPress: async () => {
           await signOut();
-          navigation.navigate("Auth");
+          router.replace("/(auth)/auth");
         },
       },
     ]);
