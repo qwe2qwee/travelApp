@@ -1,50 +1,69 @@
-# Welcome to your Expo app 👋
+## travelApp
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+travelApp is a React Native mobile application built with Expo and TypeScript. It includes a small app shell, screen-based routing (Expo Router), and a Supabase integration for backend services.
 
-## Get started
+This repository contains the app source under the `app/` directory and several reusable UI components in `components/`.
 
-1. Install dependencies
+## Prerequisites
 
-   ```bash
-   npm install
-   ```
+- Node.js (LTS recommended)
+- npm (or Yarn)
+- Optional: Android Studio / Xcode for emulators
 
-2. Start the app
+## Install
 
-   ```bash
-   npx expo start
-   ```
+Open a terminal in the project root and install dependencies:
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Run (development)
 
-## Learn more
+Start the Expo dev server:
 
-To learn more about developing your project with Expo, look at the following resources:
+```powershell
+npx expo start -c
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This opens the Metro/Expo dev tools where you can run the app on an emulator, simulator, a physical device (Expo Go or development build), or in a web browser.
 
-## Join the community
+## Useful scripts
 
-Join our community of developers creating universal apps.
+- `npm run start` — Start Expo (alias to `npx expo start`).
+- `npm run reset-project` — Reset starter files (moves starter to `app-example` and creates a blank `app/`).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See `package.json` for the full list of scripts.
+
+## Environment & Secrets
+
+This project uses Supabase for backend integration. Supply your Supabase values via environment variables or a secure secrets file. Typical variables:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Check `integrations/supabase/client.ts` for how the client is initialized.
+
+## Project structure (high level)
+
+- `app/` — App entry and routes (Expo Router).
+- `components/` — Reusable UI components.
+- `assets/` — Images and static assets.
+- `integrations/` — Third-party integrations (e.g., Supabase client).
+- `contexts/`, `hooks/`, `constants/` — App utilities and shared state.
+
+## Contributing
+
+If you want to contribute or open an issue, please:
+
+1. Fork the repo
+2. Create a feature branch
+3. Open a pull request with a clear description
+
+## License
+
+This project currently has no license file. Add one if you plan to publish or share the code.
+
+---
+
+If you'd like, I can also add a short development checklist, a `.env.example` file, or update `package.json` scripts. Which would you prefer next?
