@@ -126,6 +126,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ focused }) => (
+            <IconSymbol
+              size={24}
+              name="map.fill"
+              color={
+                focused ? colors.tint : colors.tabIconDefault || colors.icon
+              }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: "Chat",

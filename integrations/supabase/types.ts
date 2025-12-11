@@ -78,6 +78,92 @@ export type Database = {
           }
         ];
       };
+      places: {
+        Row: {
+          category: string | null;
+          city: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          lat: number | null;
+          lng: number | null;
+          photo_url: string | null;
+          title: string;
+        };
+        Insert: {
+          category?: string | null;
+          city?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          lat?: number | null;
+          lng?: number | null;
+          photo_url?: string | null;
+          title: string;
+        };
+        Update: {
+          category?: string | null;
+          city?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          lat?: number | null;
+          lng?: number | null;
+          photo_url?: string | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
+      posts: {
+        Row: {
+          caption: string | null;
+          category: string | null;
+          created_at: string;
+          id: string;
+          lat: number | null;
+          lng: number | null;
+          media_type: string;
+          media_url: string;
+          spot_name: string | null;
+          title: string | null;
+          user_id: string;
+        };
+        Insert: {
+          caption?: string | null;
+          category?: string | null;
+          created_at?: string;
+          id?: string;
+          lat?: number | null;
+          lng?: number | null;
+          media_type: string;
+          media_url: string;
+          spot_name?: string | null;
+          title?: string | null;
+          user_id: string;
+        };
+        Update: {
+          caption?: string | null;
+          category?: string | null;
+          created_at?: string;
+          id?: string;
+          lat?: number | null;
+          lng?: number | null;
+          media_type?: string;
+          media_url?: string;
+          spot_name?: string | null;
+          title?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
