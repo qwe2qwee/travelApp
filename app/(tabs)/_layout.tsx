@@ -141,13 +141,43 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="create"
+        options={{
+          title: "Create",
+          tabBarIcon: ({ focused }) => (
+            <IconSymbol
+              size={24}
+              name="plus.circle.fill"
+              color={
+                focused ? colors.tint : colors.tabIconDefault || colors.icon
+              }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: "Chat",
           tabBarIcon: ({ focused }) => (
             <IconSymbol
               size={24}
-              name="paperplane.fill"
+              name="message.circle.fill"
+              color={
+                focused ? colors.tint : colors.tabIconDefault || colors.icon
+              }
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="itinerary"
+        options={{
+          title: "Itinerary",
+          tabBarIcon: ({ focused }) => (
+            <IconSymbol
+              size={24}
+              name="calendar.circle.fill"
               color={
                 focused ? colors.tint : colors.tabIconDefault || colors.icon
               }
