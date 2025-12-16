@@ -1,20 +1,20 @@
 // ============================================
-// app/(tabs)/create.tsx - مع الموقع الإجباري
+// app/create.tsx - Complete Create Post Screen
 // ============================================
-import { MediaPicker } from "@/components/Post/MediaPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { supabase } from "@/integrations/supabase/client";
 import { decode } from "base64-arraybuffer";
-import { File } from "expo-file-system";
+import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
-import { AlertCircle, MapPin, Send } from "lucide-react-native";
+import { MapPin, Send, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MediaPicker } from "./MediaPicker";
 
 export default function CreatePostScreen() {
   const [media, setMedia] = useState<{
@@ -34,13 +34,11 @@ export default function CreatePostScreen() {
   const [category, setCategory] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
-  const insets = useSafeAreaInsets();
   const {
     lat,
     lng,
     spotName,
     loading: locationLoading,
-    error,
     getLocation,
   } = useGeolocation();
   const { user } = useAuth();
@@ -60,37 +58,18 @@ export default function CreatePostScreen() {
   }, []);
 
   const handleSubmit = async () => {
-    // ✅ التحقق من المعلومات الأساسية
     if (!media || !user || !title.trim()) {
       Alert.alert("Missing Info", "Please add a title and media to your post.");
-      return;
-    }
-
-    // 🔴 التحقق من الموقع (إجباري)
-    if (!lat || !lng) {
-      Alert.alert(
-        "Location Required",
-        "Location is required to post. Please enable location access and try again.",
-        [
-          {
-            text: "Enable Location",
-            onPress: () => getLocation(),
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
       return;
     }
 
     setUploading(true);
 
     try {
-      // 1. Read file as base64 using new File API (Expo SDK 54+)
-      const file = new File(media.uri);
-      const base64 = await file.base64();
+      // 1. Read file as base64 using the new File API
+      const base64 = await FileSystem.readAsStringAsync(media.uri, {
+        encoding: "base64",
+      });
 
       // 2. Determine file extension
       const ext = media.type === "video" ? "mp4" : "jpg";
@@ -111,7 +90,7 @@ export default function CreatePostScreen() {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(filePath);
 
-      // 5. Insert post record (الموقع مضمون موجود هنا)
+      // 5. Insert post record
       const { error: insertError } = await supabase.from("posts").insert({
         user_id: user.id,
         media_url: publicUrl,
@@ -119,8 +98,8 @@ export default function CreatePostScreen() {
         title: title.trim(),
         caption: caption || null,
         category: category || null,
-        lat, // ✅ موجود
-        lng, // ✅ موجود
+        lat,
+        lng,
         spot_name: spotName,
       });
 
@@ -140,15 +119,21 @@ export default function CreatePostScreen() {
     }
   };
 
-  // ✅ تحديد إذا كان الزر معطل
-  const isSubmitDisabled = !media || !title.trim() || uploading || !lat || !lng; // 🔴 الموقع إجباري
-
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} disabled={uploading}>
+            <X size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Create Post</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.content}
@@ -159,9 +144,7 @@ export default function CreatePostScreen() {
           <MediaPicker media={media} onMediaSelect={setMedia} />
 
           {/* Form */}
-          <View
-            style={[styles.form, { marginBottom: insets.bottom + insets.top }]}
-          >
+          <View style={styles.form}>
             {/* Title */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Title *</Text>
@@ -220,67 +203,39 @@ export default function CreatePostScreen() {
               />
             </View>
 
-            {/* 🔴 Location (Required) */}
-            <View style={styles.inputGroup}>
-              <View style={styles.labelWithRequired}>
-                <Text style={styles.label}>Location *</Text>
-                {!lat && !lng && !locationLoading && (
-                  <Text style={styles.requiredText}>Required</Text>
+            {/* Location */}
+            <View style={styles.locationCard}>
+              <MapPin size={20} color="#6366f1" />
+              <View style={styles.locationContent}>
+                {locationLoading ? (
+                  <Text style={styles.locationText}>Getting location...</Text>
+                ) : spotName ? (
+                  <Text style={styles.locationName} numberOfLines={1}>
+                    {spotName}
+                  </Text>
+                ) : lat && lng ? (
+                  <Text style={styles.locationText}>
+                    {lat.toFixed(4)}, {lng.toFixed(4)}
+                  </Text>
+                ) : (
+                  <TouchableOpacity onPress={getLocation} disabled={uploading}>
+                    <Text style={styles.enableLocationText}>
+                      Enable location
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
-
-              <TouchableOpacity
-                style={[styles.locationCard, error && styles.locationCardError]}
-                onPress={() => {
-                  console.log("🔔 Location card pressed");
-                  getLocation();
-                }}
-                disabled={uploading || locationLoading}
-                activeOpacity={0.7}
-              >
-                <MapPin size={20} color={error ? "#ef4444" : "#6366f1"} />
-                <View style={styles.locationContent}>
-                  {locationLoading ? (
-                    <View style={styles.locationRow}>
-                      <ActivityIndicator size="small" color="#6366f1" />
-                      <Text style={styles.locationText}>
-                        Getting location...
-                      </Text>
-                    </View>
-                  ) : error ? (
-                    <View>
-                      <Text style={styles.locationError}>{error}</Text>
-                      <Text style={styles.retryButtonText}>
-                        Tap here to enable location
-                      </Text>
-                    </View>
-                  ) : spotName ? (
-                    <Text style={styles.locationName} numberOfLines={1}>
-                      📍 {spotName}
-                    </Text>
-                  ) : lat && lng ? (
-                    <Text style={styles.locationText}>
-                      📍 {lat.toFixed(4)}, {lng.toFixed(4)}
-                    </Text>
-                  ) : (
-                    <View style={styles.enableButton}>
-                      <AlertCircle size={16} color="#ef4444" />
-                      <Text style={styles.enableLocationText}>
-                        Tap to enable location
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
             </View>
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                isSubmitDisabled && styles.submitButtonDisabled,
+                (!media || !title.trim() || uploading) &&
+                  styles.submitButtonDisabled,
               ]}
               onPress={handleSubmit}
-              disabled={isSubmitDisabled}
+              disabled={!media || !title.trim() || uploading}
               activeOpacity={0.7}
             >
               {uploading ? (
@@ -295,21 +250,10 @@ export default function CreatePostScreen() {
                 </>
               )}
             </TouchableOpacity>
-
-            {/* 🔴 رسالة تحذيرية إذا لم يكن هناك موقع */}
-            {!lat && !lng && !locationLoading && (
-              <View style={styles.warningCard}>
-                <AlertCircle size={18} color="#f59e0b" />
-                <Text style={styles.warningText}>
-                  Location is required to create a post. Please enable location
-                  access.
-                </Text>
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -320,6 +264,20 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
   },
   container: {
     flex: 1,
@@ -338,17 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#000",
-  },
-  // ✅ Styles جديدة
-  labelWithRequired: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  requiredText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#ef4444",
   },
   input: {
     borderWidth: 1,
@@ -395,20 +342,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  locationCardError: {
-    borderColor: "#fee2e2",
-    backgroundColor: "#fef2f2",
   },
   locationContent: {
     flex: 1,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
   },
   locationName: {
     fontSize: 14,
@@ -419,28 +355,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#64748b",
   },
-  enableButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
   enableLocationText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#ef4444",
-  },
-  retryButton: {
-    marginTop: 4,
-  },
-  retryButtonText: {
-    fontSize: 13,
-    fontWeight: "500",
     color: "#6366f1",
-  },
-  locationError: {
-    fontSize: 14,
-    color: "#ef4444",
-    marginBottom: 4,
   },
   submitButton: {
     flexDirection: "row",
@@ -459,22 +377,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#fff",
-  },
-  // ✅ Warning Card جديد
-  warningCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#fffbeb",
-    borderWidth: 1,
-    borderColor: "#fde68a",
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#92400e",
-    lineHeight: 18,
   },
 });

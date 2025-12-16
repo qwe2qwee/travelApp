@@ -104,7 +104,6 @@ export const ClusteredMapView: React.FC = () => {
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         initialRegion={JAPAN_CENTER}
-        showsUserLocation
         showsCompass
         showsScale
         onMapReady={handleMapReady}
@@ -221,14 +220,6 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 4.65,
-    elevation: 8,
   },
   placeMarker: {
     width: 40,
@@ -239,14 +230,6 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 4.65,
-    elevation: 8,
   },
   markerEmoji: {
     fontSize: 18,
@@ -258,14 +241,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     padding: 12,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+
     minWidth: 200,
   },
   debugTitle: {
