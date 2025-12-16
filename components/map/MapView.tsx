@@ -38,9 +38,6 @@ export const ClusteredMapView: React.FC = () => {
   // Log data for debugging
   useEffect(() => {
     if (!postsLoading && !placesLoading) {
-      console.log("Posts loaded:", posts.length);
-      console.log("Places loaded:", places.length);
-
       // Log first post with coordinates
       const firstPost = posts.find((p) => p.lat && p.lng);
       if (firstPost) {
@@ -101,14 +98,13 @@ export const ClusteredMapView: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: 80 }]}>
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         initialRegion={JAPAN_CENTER}
         showsUserLocation
-        showsMyLocationButton
         showsCompass
         showsScale
         onMapReady={handleMapReady}

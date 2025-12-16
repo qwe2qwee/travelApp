@@ -1,3 +1,14 @@
+import { router } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
+import {
+  Bookmark,
+  ExternalLink,
+  Image as ImageIcon,
+  MapPin,
+  Navigation,
+  Video as VideoIcon,
+  X,
+} from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Animated,
@@ -38,10 +49,27 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
 }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [slideAnim] = useState(new Animated.Value(1));
+  const player = useVideoPlayer(
+    item?.image ? { uri: item.image } : null,
+    (player) => {
+      if (player) {
+        player.loop = true;
+        player.muted = true;
+      }
+    }
+  );
 
   useEffect(() => {
     setIsSaved(false);
   }, [item?.id]);
+
+  useEffect(() => {
+    if (isOpen && player) {
+      player.play();
+    } else if (player) {
+      player.pause();
+    }
+  }, [isOpen, player]);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,37 +89,37 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
   }, [isOpen, slideAnim]);
 
   const handleGetDirections = useCallback(() => {
-    if (item?.lat && item?.lng) {
-      const scheme = Platform.select({
-        ios: "maps://",
-        android: "geo:",
-      });
-      const url = Platform.select({
-        ios: `${scheme}?daddr=${item.lat},${item.lng}`,
-        android: `${scheme}${item.lat},${item.lng}`,
-      });
+    if (!item || item.lat == null || item.lng == null) return;
+    const url = Platform.select({
+      ios: `maps://app?daddr=${item.lat},${item.lng}`,
+      android: `google.navigation:q=${item.lat},${item.lng}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`,
+    });
 
-      Linking.canOpenURL(url!).then((supported) => {
-        if (supported) {
-          Linking.openURL(url!);
-        } else {
-          // Fallback to Google Maps web
-          Linking.openURL(
-            `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`
-          );
-        }
-      });
-    }
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`
+        );
+      }
+    });
   }, [item]);
 
   const handleViewDetails = useCallback(() => {
-    console.log(`Navigating to details for ${item?.id}`);
-    // Add navigation logic here
-    // navigation.navigate('Details', { id: item?.id, type: item?.type });
-  }, [item]);
+    if (!item) return;
+    if (item.type === "post") {
+      router.push(`/post/${item.id}`);
+    } else {
+      router.push(`/place/${item.id}`);
+    }
+    onClose();
+  }, [item, onClose]);
 
   const handleSave = useCallback(() => {
     setIsSaved((prev) => !prev);
+    // TODO: Add save to database logic
   }, []);
 
   if (!item) return null;
@@ -131,7 +159,7 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
                 style={styles.closeButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.closeIcon}>✕</Text>
+                <X size={20} color="#64748b" />
               </TouchableOpacity>
 
               <View style={styles.content}>
@@ -140,11 +168,25 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
                   {/* Image/Video Thumbnail */}
                   <View style={styles.thumbnailContainer}>
                     {item.image ? (
-                      <Image
-                        source={{ uri: item.image }}
-                        style={styles.thumbnail}
-                        resizeMode="cover"
-                      />
+                      item.media_type === "video" ? (
+                        <>
+                          <VideoView
+                            player={player}
+                            style={styles.thumbnail}
+                            contentFit="cover"
+                          />
+                          {/* Video Badge */}
+                          <View style={styles.videoBadge}>
+                            <VideoIcon size={12} color="#fff" />
+                          </View>
+                        </>
+                      ) : (
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.thumbnail}
+                          resizeMode="cover"
+                        />
+                      )
                     ) : (
                       <View style={styles.thumbnailPlaceholder}>
                         <Text style={styles.placeholderEmoji}>
@@ -170,20 +212,25 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
                           },
                         ]}
                       />
-                      <Text style={styles.typeLabel}>
-                        {item.type === "post"
-                          ? item.media_type === "video"
-                            ? "📹 USER POST"
-                            : "📷 USER POST"
-                          : "LANDMARK"}
-                      </Text>
+                      <View style={styles.typeLabel}>
+                        {item.type === "post" ? (
+                          item.media_type === "video" ? (
+                            <VideoIcon size={10} color="#64748b" />
+                          ) : (
+                            <ImageIcon size={10} color="#64748b" />
+                          )
+                        ) : null}
+                        <Text style={styles.typeLabelText}>
+                          {item.type === "post" ? "USER POST" : "LANDMARK"}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={styles.title} numberOfLines={2}>
                       {item.title}
                     </Text>
                     {item.subtitle && (
                       <View style={styles.subtitleRow}>
-                        <Text style={styles.locationIcon}>📍</Text>
+                        <MapPin size={14} color="#64748b" />
                         <Text style={styles.subtitle} numberOfLines={1}>
                           {item.subtitle}
                         </Text>
@@ -193,37 +240,49 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
                 </View>
 
                 {/* Actions Row */}
-                <View style={styles.actionsRow}>
-                  {/* Get Directions Button */}
-                  <TouchableOpacity
-                    onPress={handleGetDirections}
-                    style={styles.directionsButton}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.navigationIcon}>🧭</Text>
-                    <Text style={styles.directionsText}>Get Directions</Text>
-                  </TouchableOpacity>
+                <View style={styles.actionsContainer}>
+                  {/* Primary Actions - Two Columns */}
+                  <View style={styles.primaryActions}>
+                    <TouchableOpacity
+                      onPress={handleGetDirections}
+                      style={styles.directionsButton}
+                      activeOpacity={0.8}
+                    >
+                      <Navigation size={18} color="#fff" />
+                      <Text style={styles.directionsText}>Directions</Text>
+                    </TouchableOpacity>
 
-                  {/* View Details Button */}
-                  <TouchableOpacity
-                    onPress={handleViewDetails}
-                    style={styles.iconButton}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.iconButtonText}>🔗</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleViewDetails}
+                      style={styles.detailsButton}
+                      activeOpacity={0.8}
+                    >
+                      <ExternalLink size={18} color="#0f172a" />
+                      <Text style={styles.detailsText}>View Details</Text>
+                    </TouchableOpacity>
+                  </View>
 
-                  {/* Save Button */}
+                  {/* Save Button - Full Width */}
                   <TouchableOpacity
                     onPress={handleSave}
                     style={[
-                      styles.iconButton,
-                      isSaved && styles.iconButtonSaved,
+                      styles.saveButton,
+                      isSaved && styles.saveButtonActive,
                     ]}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.iconButtonText}>
-                      {isSaved ? "🔖" : "📌"}
+                    <Bookmark
+                      size={18}
+                      color={isSaved ? "#ef4444" : "#64748b"}
+                      fill={isSaved ? "#ef4444" : "none"}
+                    />
+                    <Text
+                      style={[
+                        styles.saveButtonText,
+                        isSaved && styles.saveButtonTextActive,
+                      ]}
+                    >
+                      {isSaved ? "Saved" : "Save for Later"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -239,7 +298,7 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "flex-end",
   },
   sheetContainer: {
@@ -283,18 +342,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 10,
   },
-  closeIcon: {
-    fontSize: 18,
-    color: "#64748b",
-    fontWeight: "600",
-  },
   content: {
     padding: 20,
   },
   header: {
     flexDirection: "row",
     gap: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     paddingRight: 32,
   },
   thumbnailContainer: {
@@ -303,6 +357,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -311,10 +367,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    position: "relative",
   },
   thumbnail: {
     width: "100%",
     height: "100%",
+  },
+  videoBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderRadius: 12,
+    padding: 6,
   },
   thumbnailPlaceholder: {
     width: "100%",
@@ -333,8 +398,8 @@ const styles = StyleSheet.create({
   typeRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 4,
   },
   typeDot: {
     width: 8,
@@ -342,8 +407,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  typeLabelText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#64748b",
     letterSpacing: 0.5,
   },
@@ -359,15 +429,15 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 6,
   },
-  locationIcon: {
-    fontSize: 12,
-  },
   subtitle: {
     fontSize: 14,
     color: "#64748b",
     flex: 1,
   },
-  actionsRow: {
+  actionsContainer: {
+    gap: 8,
+  },
+  primaryActions: {
     flexDirection: "row",
     gap: 8,
   },
@@ -377,8 +447,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: "#6366f1",
     borderRadius: 12,
     shadowColor: "#6366f1",
@@ -390,29 +459,47 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  navigationIcon: {
-    fontSize: 18,
-  },
   directionsText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#fff",
   },
-  iconButton: {
-    width: 52,
-    height: 52,
-    justifyContent: "center",
+  detailsButton: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+  },
+  detailsText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
-  iconButtonSaved: {
+  saveButtonActive: {
     backgroundColor: "#fee2e2",
     borderColor: "#fecaca",
   },
-  iconButtonText: {
-    fontSize: 20,
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748b",
+  },
+  saveButtonTextActive: {
+    color: "#ef4444",
   },
 });

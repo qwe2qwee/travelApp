@@ -5,7 +5,18 @@ import {
   Mountain,
   TreePine,
 } from "lucide-react-native";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
 
 const DESTINATIONS = [
   {
@@ -63,81 +74,92 @@ interface PopularDestinationsProps {
 }
 
 export function PopularDestinations({ onSelect }: PopularDestinationsProps) {
+  const renderDestination = ({
+    item,
+    index,
+  }: {
+    item: (typeof DESTINATIONS)[0];
+    index: number;
+  }) => {
+    const CategoryIcon = item.categoryIcon;
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, { width: CARD_WIDTH }]}
+        onPress={() => onSelect(item.name)}
+        activeOpacity={0.95}
+      >
+        {/* Background Image */}
+        <Image
+          source={{ uri: item.image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+
+        {/* Gradient Overlay */}
+        <View style={styles.gradientOverlay} />
+
+        {/* Category Badge */}
+        <View style={styles.categoryBadge}>
+          <CategoryIcon size={12} color="#0f172a" />
+          <Text style={styles.categoryText}>{item.category}</Text>
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
+          <View style={styles.nameContainer}>
+            <Text style={styles.emoji}>{item.emoji}</Text>
+            <Text style={styles.name}>{item.name}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <MapPin size={16} color="#6366f1" />
-        <Text style={styles.headerTitle}>Popular in Japan</Text>
+        <MapPin size={20} color="#6366f1" />
+        <Text style={styles.headerTitle}>Popular Destinations</Text>
       </View>
 
-      {/* Grid using flexbox */}
-      <View style={styles.grid}>
-        {DESTINATIONS.map((item) => {
-          const CategoryIcon = item.categoryIcon;
-
-          return (
-            <TouchableOpacity
-              key={item.name}
-              style={styles.card}
-              onPress={() => onSelect(item.name)}
-              activeOpacity={0.9}
-            >
-              {/* Background Image */}
-              <Image
-                source={{ uri: item.image }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-
-              {/* Gradient Overlay */}
-              <View style={styles.gradientOverlay} />
-
-              {/* Category Badge */}
-              <View style={styles.categoryBadge}>
-                <CategoryIcon size={9} color="#0f172a" />
-                <Text style={styles.categoryText}>{item.category}</Text>
-              </View>
-
-              {/* Content */}
-              <View style={styles.content}>
-                <Text style={styles.emoji}>{item.emoji}</Text>
-                <Text style={styles.name} numberOfLines={1}>
-                  {item.name}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Grid */}
+      <FlatList
+        data={DESTINATIONS}
+        renderItem={renderDestination}
+        keyExtractor={(item) => item.name}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    marginBottom: 24,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
+    marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
     color: "#0f172a",
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  row: {
     justifyContent: "space-between",
-    gap: 8,
+    marginBottom: 12,
   },
   card: {
-    width: "48.5%", // Responsive width
-    height: 100, // Fixed height for consistency
-    borderRadius: 10,
+    height: CARD_WIDTH * 0.75, // 4:3 aspect ratio
+    borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#f1f5f9",
     position: "relative",
@@ -153,46 +175,46 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   categoryBadge: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 8,
+    right: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
   },
   categoryText: {
-    fontSize: 8,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "500",
     color: "#0f172a",
-    letterSpacing: 0.2,
   },
   content: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 8,
+    padding: 12,
+  },
+  nameContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
   },
   emoji: {
-    fontSize: 14,
+    fontSize: 18,
   },
   name: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
     color: "#fff",
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-    flex: 1,
+    textShadowRadius: 4,
   },
 });
