@@ -214,7 +214,10 @@ export default function CreatePostScreen() {
           <MediaPicker media={media} onMediaSelect={setMedia} />
 
           <View
-            style={[styles.form, { marginBottom: insets.bottom + insets.top }]}
+            style={[
+              styles.form,
+              { marginBottom: insets.bottom + insets.top + 20 },
+            ]}
           >
             {/* Title */}
             <View style={styles.inputGroup}>
