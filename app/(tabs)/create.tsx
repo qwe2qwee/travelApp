@@ -1,5 +1,5 @@
 // ============================================
-// app/(tabs)/create.tsx - مع الموقع الإجباري
+// app/(tabs)/create.tsx - النسخة المحسنة (سريعة للفيديو والصور)
 // ============================================
 import { MediaPicker } from "@/components/Post/MediaPicker";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { supabase } from "@/integrations/supabase/client";
 import { decode } from "base64-arraybuffer";
 import { File } from "expo-file-system";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { router } from "expo-router";
 import { AlertCircle, MapPin, Send } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -33,6 +34,7 @@ export default function CreatePostScreen() {
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const insets = useSafeAreaInsets();
   const {
@@ -54,19 +56,91 @@ export default function CreatePostScreen() {
     { value: "transport", label: "🚅 Transport" },
   ];
 
-  // Get location when component mounts
   useEffect(() => {
     getLocation();
   }, []);
 
+  // ✅ ضغط الصورة باستخدام ImageManipulator (سريع)
+  const compressImage = async (uri: string): Promise<string> => {
+    try {
+      const manipulator = await ImageManipulator.manipulate(uri);
+      const result = await manipulator.resize({ width: 1080 }).renderAsync();
+      const compressed = await result.saveAsync({
+        compress: 0.7,
+        format: SaveFormat.JPEG,
+      });
+      return compressed.uri;
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      return uri;
+    }
+  };
+
+  // ✅ رفع الفيديو (الطريقة الأصلية المضمونة)
+  const uploadVideo = async (uri: string): Promise<string> => {
+    // قراءة الفيديو كـ base64 (الطريقة الوحيدة المضمونة للفيديو)
+    const file = new File(uri);
+    const base64 = await file.base64();
+
+    const timestamp = Date.now();
+    const filePath = `${user!.id}/${timestamp}.mp4`;
+
+    // رفع الفيديو
+    const { error: uploadError } = await supabase.storage
+      .from("posts")
+      .upload(filePath, decode(base64), {
+        contentType: "video/mp4",
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    // الحصول على الرابط العام
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("posts").getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  // 🚀 رفع الصورة باستخدام blob (أسرع من base64)
+  const uploadImage = async (uri: string): Promise<string> => {
+    // ضغط الصورة أولاً
+    const compressedUri = await compressImage(uri);
+
+    const timestamp = Date.now();
+    const filePath = `${user!.id}/${timestamp}.jpg`;
+
+    // قراءة الصورة كـ blob مباشرة (أسرع من base64)
+    const response = await fetch(compressedUri);
+    const blob = await response.blob();
+
+    // رفع الصورة
+    const { error: uploadError } = await supabase.storage
+      .from("posts")
+      .upload(filePath, blob, {
+        contentType: "image/jpeg",
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    // الحصول على الرابط العام
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("posts").getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async () => {
-    // ✅ التحقق من المعلومات الأساسية
     if (!media || !user || !title.trim()) {
       Alert.alert("Missing Info", "Please add a title and media to your post.");
       return;
     }
 
-    // 🔴 التحقق من الموقع (إجباري)
     if (!lat || !lng) {
       Alert.alert(
         "Location Required",
@@ -86,62 +160,63 @@ export default function CreatePostScreen() {
     }
 
     setUploading(true);
+    setUploadProgress(0);
 
     try {
-      // 1. Read file as base64 using new File API (Expo SDK 54+)
-      const file = new File(media.uri);
-      const base64 = await file.base64();
+      // 1️⃣ رفع الملف
+      setUploadProgress(10);
+      let mediaUrl: string;
 
-      // 2. Determine file extension
-      const ext = media.type === "video" ? "mp4" : "jpg";
-      const timestamp = Date.now();
-      const filePath = `${user.id}/${timestamp}.${ext}`;
+      if (media.type === "video") {
+        mediaUrl = await uploadVideo(media.uri);
+      } else {
+        mediaUrl = await uploadImage(media.uri);
+      }
 
-      // 3. Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("posts")
-        .upload(filePath, decode(base64), {
-          contentType: media.type === "video" ? "video/mp4" : "image/jpeg",
-        });
+      setUploadProgress(70);
 
-      if (uploadError) throw uploadError;
-
-      // 4. Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(filePath);
-
-      // 5. Insert post record (الموقع مضمون موجود هنا)
+      // 2️⃣ إدراج البوست
       const { error: insertError } = await supabase.from("posts").insert({
         user_id: user.id,
-        media_url: publicUrl,
+        media_url: mediaUrl,
         media_type: media.type === "video" ? "video" : "photo",
         title: title.trim(),
-        caption: caption || null,
+        caption: caption.trim() || null,
         category: category || null,
-        lat, // ✅ موجود
-        lng, // ✅ موجود
+        lat,
+        lng,
         spot_name: spotName,
       });
 
       if (insertError) throw insertError;
 
+      setUploadProgress(100);
+
       Alert.alert("Success", "Your post has been shared successfully!", [
         {
           text: "OK",
-          onPress: () => router.replace("/(tabs)"),
+          onPress: () => {
+            setMedia(null);
+            setTitle("");
+            setCaption("");
+            setCategory("");
+            router.replace("/(tabs)");
+          },
         },
       ]);
-    } catch (error) {
-      console.error("Error creating post:", error);
-      Alert.alert("Error", "Failed to create post. Please try again.");
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      Alert.alert(
+        "Error",
+        error?.message || "Failed to create post. Please try again."
+      );
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  // ✅ تحديد إذا كان الزر معطل
-  const isSubmitDisabled = !media || !title.trim() || uploading || !lat || !lng; // 🔴 الموقع إجباري
+  const isSubmitDisabled = !media || !title.trim() || uploading || !lat || !lng;
 
   return (
     <View style={[styles.safeArea, { paddingTop: insets.top }]}>
@@ -172,6 +247,7 @@ export default function CreatePostScreen() {
                 onChangeText={setTitle}
                 placeholderTextColor="#999"
                 editable={!uploading}
+                maxLength={100}
               />
             </View>
 
@@ -217,10 +293,11 @@ export default function CreatePostScreen() {
                 numberOfLines={4}
                 placeholderTextColor="#999"
                 editable={!uploading}
+                maxLength={500}
               />
             </View>
 
-            {/* 🔴 Location (Required) */}
+            {/* Location */}
             <View style={styles.inputGroup}>
               <View style={styles.labelWithRequired}>
                 <Text style={styles.label}>Location *</Text>
@@ -231,10 +308,7 @@ export default function CreatePostScreen() {
 
               <TouchableOpacity
                 style={[styles.locationCard, error && styles.locationCardError]}
-                onPress={() => {
-                  console.log("🔔 Location card pressed");
-                  getLocation();
-                }}
+                onPress={getLocation}
                 disabled={uploading || locationLoading}
                 activeOpacity={0.7}
               >
@@ -273,6 +347,7 @@ export default function CreatePostScreen() {
                 </View>
               </TouchableOpacity>
             </View>
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[
@@ -286,7 +361,10 @@ export default function CreatePostScreen() {
               {uploading ? (
                 <>
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text style={styles.submitButtonText}>Posting...</Text>
+                  <Text style={styles.submitButtonText}>
+                    {media?.type === "video" ? "Uploading video" : "Posting"}...{" "}
+                    {uploadProgress}%
+                  </Text>
                 </>
               ) : (
                 <>
@@ -296,7 +374,19 @@ export default function CreatePostScreen() {
               )}
             </TouchableOpacity>
 
-            {/* 🔴 رسالة تحذيرية إذا لم يكن هناك موقع */}
+            {/* Progress Bar */}
+            {uploading && (
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${uploadProgress}%` },
+                  ]}
+                />
+              </View>
+            )}
+
+            {/* Warning */}
             {!lat && !lng && !locationLoading && (
               <View style={styles.warningCard}>
                 <AlertCircle size={18} color="#f59e0b" />
@@ -339,7 +429,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#000",
   },
-  // ✅ Styles جديدة
   labelWithRequired: {
     flexDirection: "row",
     alignItems: "center",
@@ -429,9 +518,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#ef4444",
   },
-  retryButton: {
-    marginTop: 4,
-  },
   retryButtonText: {
     fontSize: 13,
     fontWeight: "500",
@@ -460,7 +546,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
-  // ✅ Warning Card جديد
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#6366f1",
+    borderRadius: 2,
+  },
   warningCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,5 +1,5 @@
 // ============================================
-// app/post/[id].tsx - Post Detail Screen
+// app/post/[id].tsx - Post Detail Screen (Fixed)
 // ============================================
 import { supabase } from "@/integrations/supabase/client";
 import { router, useLocalSearchParams } from "expo-router";
@@ -59,23 +59,14 @@ export default function PostDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Video player setup
-  const player = useVideoPlayer(post?.media_url ?? "", (player) => {
-    player.loop = true;
-  });
-
-  useEffect(() => {
-    if (post?.media_type === "video" && post.media_url) {
-      // @ts-ignore
-      if (player.replaceAsync) {
-        // @ts-ignore
-        player.replaceAsync(post.media_url, { shouldPlay: true });
-      } else {
-        player.replace(post.media_url);
-        player.play();
-      }
+  // ✅ Initialize video player correctly - will be set when post loads
+  const player = useVideoPlayer(
+    post?.media_type === "video" ? post.media_url : "",
+    (player) => {
+      player.loop = true;
+      player.play();
     }
-  }, [post?.media_url, post?.media_type]);
+  );
 
   useEffect(() => {
     fetchPost();
@@ -251,17 +242,22 @@ export default function PostDetailScreen() {
         </View>
 
         {/* Media */}
-        {/* Media */}
         <View style={styles.mediaContainer}>
           {post.media_type === "video" ? (
             <VideoView
               style={styles.media}
               player={player}
-              contentFit="contain"
+              contentFit="cover"
+              nativeControls
+              allowsFullscreen
               allowsPictureInPicture
             />
           ) : (
-            <Image source={{ uri: post.media_url }} style={styles.media} />
+            <Image
+              source={{ uri: post.media_url }}
+              style={styles.media}
+              resizeMode="cover"
+            />
           )}
         </View>
 
@@ -419,29 +415,9 @@ const styles = StyleSheet.create({
   mediaContainer: {
     backgroundColor: "#000",
   },
-  videoContainer: {
-    position: "relative",
-  },
   media: {
     width: "100%",
-    height: 400,
-    resizeMode: "contain",
-  },
-  videoBadge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  videoBadgeText: {
-    fontSize: 11,
-    color: "#fff",
+    aspectRatio: 1,
   },
   content: {
     padding: 16,
@@ -450,8 +426,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginBottom: 12,
+    flexWrap: "wrap",
   },
   badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -573,7 +553,7 @@ const styles = StyleSheet.create({
   },
   mediaSkeleton: {
     width: "100%",
-    height: 400,
+    aspectRatio: 1,
     backgroundColor: "#f1f5f9",
   },
   // Not Found
