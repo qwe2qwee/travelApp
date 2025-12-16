@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -20,6 +21,8 @@ interface ChatInputProps {
 export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
   const [input, setInput] = useState("");
 
+  const inset = useSafeAreaInsets();
+
   const handleSend = () => {
     if (input.trim() && !isLoading) {
       onSend(input);
@@ -28,7 +31,7 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <TextInput
         style={styles.input}
         value={input}

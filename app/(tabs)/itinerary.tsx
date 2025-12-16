@@ -93,13 +93,7 @@ export default function Itinerary() {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { paddingTop: inset.top, paddingBottom: inset.bottom + 40 },
-      ]}
-      edges={["top"]}
-    >
+    <SafeAreaView style={[styles.safeArea]} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -146,7 +140,12 @@ export default function Itinerary() {
           </View>
 
           {/* Results Section */}
-          <View style={styles.resultsSection}>
+          <View
+            style={[
+              styles.resultsSection,
+              { marginBottom: inset.bottom + inset.top },
+            ]}
+          >
             {isLoading && <LoadingMessages />}
 
             {!isLoading && itinerary && (
@@ -172,7 +171,12 @@ export default function Itinerary() {
                 </View>
 
                 {/* Popular Destinations */}
-                <View style={styles.popularCard}>
+                <View
+                  style={[
+                    styles.popularCard,
+                    { marginBottom: inset.bottom + inset.top },
+                  ]}
+                >
                   <PopularDestinations onSelect={setDestination} />
                 </View>
               </View>

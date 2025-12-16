@@ -49,7 +49,8 @@ const TabButton = React.memo(
               styles.iconWrapper,
               isPrimary && {
                 backgroundColor: colors.tint,
-                shadowColor: colors.tint,
+                borderWidth: 4,
+                borderColor: "#FFF",
               },
             ]}
           >
@@ -150,11 +151,14 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   primaryButton: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   iconWrapper: {
     alignItems: "center",
     justifyContent: "center",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   activeDot: {
     position: "absolute",

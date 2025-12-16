@@ -6,7 +6,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/hooks/useChat";
 import { router } from "expo-router";
-import { LogOut, MapPin, Trash2 } from "lucide-react-native";
+import { MapPin, Trash2 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
   Alert,
@@ -18,7 +18,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 interface ChatContainerProps {
   navigation: any;
@@ -28,6 +31,7 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
   const { messages, isLoading, error, sendMessage, clearChat } = useChat();
   const { user, signOut } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
+  const inset = useSafeAreaInsets();
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -80,17 +84,12 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        <View style={[styles.container, { paddingBottom: 60 }]}>
+        <View
+          style={[styles.container, { marginBottom: inset.bottom + inset.top }]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={handleSignOut}
-                activeOpacity={0.7}
-              >
-                <LogOut size={20} color="#666" />
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={handleClear}
