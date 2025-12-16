@@ -1,149 +1,74 @@
-// ============================================
-// hooks/useGeolocation.ts - مُحسَّن
-// ============================================
+// hooks/useGeolocation.ts
 import * as Location from "expo-location";
 import { useCallback, useState } from "react";
-import { Alert, Linking, Platform } from "react-native";
 
-interface GeolocationState {
-  lat: number | null;
-  lng: number | null;
-  spotName: string | null;
-  loading: boolean;
-  error: string | null;
-  permissionStatus: Location.PermissionStatus | null;
-}
-
-export const useGeolocation = () => {
-  const [state, setState] = useState<GeolocationState>({
-    lat: null,
-    lng: null,
-    spotName: null,
-    loading: false,
-    error: null,
-    permissionStatus: null,
-  });
+export function useGeolocation() {
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [spotName, setSpotName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   const getLocation = useCallback(async () => {
-    console.log("🔍 Getting location...");
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    if (loading) return;
+
+    setLoading(true);
+    setError(null);
 
     try {
-      // 1️⃣ فحص الصلاحية الحالية أولاً
-      let { status } = await Location.getForegroundPermissionsAsync();
-      console.log("📍 Current permission status:", status);
+      // 1️⃣ طلب الإذن
+      const { status } = await Location.requestForegroundPermissionsAsync();
 
-      // 2️⃣ إذا ما كانت ممنوحة، اطلبها
-      if (status !== Location.PermissionStatus.GRANTED) {
-        console.log("🔔 Requesting permission...");
-        const response = await Location.requestForegroundPermissionsAsync();
-        status = response.status;
-        console.log("📍 New permission status:", status);
-      }
-
-      // 3️⃣ إذا رفض المستخدم
-      if (status !== Location.PermissionStatus.GRANTED) {
-        // تحقق إذا رفض نهائياً (can't ask again)
-        if (status === Location.PermissionStatus.DENIED) {
-          Alert.alert(
-            "Location Permission Required",
-            "Please enable location access in your device settings to use this feature.",
-            [
-              {
-                text: "Open Settings",
-                onPress: () => {
-                  if (Platform.OS === "ios") {
-                    Linking.openURL("app-settings:");
-                  } else {
-                    Linking.openSettings();
-                  }
-                },
-              },
-              { text: "Cancel", style: "cancel" },
-            ]
-          );
-        }
-
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          error: "Location permission denied",
-          permissionStatus: status,
-        }));
+      if (status !== "granted") {
+        setPermissionDenied(true);
+        setError("Location permission was denied");
+        setLoading(false);
         return;
       }
 
-      console.log("✅ Permission granted, getting position...");
-
-      // 4️⃣ جلب الموقع
+      // 2️⃣ جلب الموقع
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Balanced,
       });
 
-      const { latitude, longitude } = location.coords;
-      console.log("📍 Location:", latitude, longitude);
+      const latitude = location.coords.latitude;
+      const longitude = location.coords.longitude;
 
-      // 5️⃣ Reverse Geocoding
-      let spotName = null;
+      setLat(latitude);
+      setLng(longitude);
+
+      // 3️⃣ جلب اسم المكان (اختياري)
       try {
-        console.log("🌍 Getting place name...");
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-          {
-            headers: {
-              "Accept-Language": "en",
-              "User-Agent": "YourAppName/1.0", // مهم لـ OpenStreetMap
-            },
-          }
-        );
-        const data = await response.json();
+        const places = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
 
-        if (data.address) {
-          const { name, road, city, town, village, state, country } =
-            data.address;
-          const place = name || road || "";
-          const area = city || town || village || state || "";
-          spotName = [place, area, country]
-            .filter(Boolean)
-            .slice(0, 2)
-            .join(", ");
-          console.log("📍 Place name:", spotName);
+        if (places.length > 0) {
+          const place = places[0];
+          const name =
+            place.city || place.district || place.subregion || place.region;
+
+          setSpotName(name ?? null);
         }
-      } catch (err) {
-        console.log("⚠️ Reverse geocoding failed:", err);
+      } catch {
+        setSpotName(null);
       }
-
-      setState({
-        lat: latitude,
-        lng: longitude,
-        spotName,
-        loading: false,
-        error: null,
-        permissionStatus: status,
-      });
-
-      console.log("✅ Location updated successfully");
-    } catch (error) {
-      console.error("❌ Location error:", error);
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: "Failed to get location",
-        permissionStatus: prev.permissionStatus,
-      }));
+    } catch (err) {
+      setError("Failed to get location");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
-  const clearLocation = useCallback(() => {
-    setState({
-      lat: null,
-      lng: null,
-      spotName: null,
-      loading: false,
-      error: null,
-      permissionStatus: null,
-    });
-  }, []);
-
-  return { ...state, getLocation, clearLocation };
-};
+  return {
+    lat,
+    lng,
+    spotName,
+    loading,
+    error,
+    permissionDenied,
+    getLocation,
+  };
+}

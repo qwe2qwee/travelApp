@@ -1,5 +1,5 @@
 // ============================================
-// app/(tabs)/create.tsx - النسخة المحسنة (سريعة للفيديو والصور)
+// app/(tabs)/create.tsx - Enhanced version with Modal
 // ============================================
 import { MediaPicker } from "@/components/Post/MediaPicker";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,8 +9,8 @@ import { decode } from "base64-arraybuffer";
 import { File } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { router } from "expo-router";
-import { AlertCircle, MapPin, Send } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { AlertCircle, MapPin, Send, X } from "lucide-react-native";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Modal from "react-native-modal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CreatePostScreen() {
@@ -36,6 +37,9 @@ export default function CreatePostScreen() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // 🎯 Modal State
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
   const insets = useSafeAreaInsets();
   const {
     lat,
@@ -45,6 +49,7 @@ export default function CreatePostScreen() {
     error,
     getLocation,
   } = useGeolocation();
+
   const { user } = useAuth();
 
   const categories = [
@@ -56,11 +61,6 @@ export default function CreatePostScreen() {
     { value: "transport", label: "🚅 Transport" },
   ];
 
-  useEffect(() => {
-    getLocation();
-  }, []);
-
-  // ✅ ضغط الصورة باستخدام ImageManipulator (سريع)
   const compressImage = async (uri: string): Promise<string> => {
     try {
       const manipulator = await ImageManipulator.manipulate(uri);
@@ -76,16 +76,12 @@ export default function CreatePostScreen() {
     }
   };
 
-  // ✅ رفع الفيديو (الطريقة الأصلية المضمونة)
   const uploadVideo = async (uri: string): Promise<string> => {
-    // قراءة الفيديو كـ base64 (الطريقة الوحيدة المضمونة للفيديو)
     const file = new File(uri);
     const base64 = await file.base64();
-
     const timestamp = Date.now();
     const filePath = `${user!.id}/${timestamp}.mp4`;
 
-    // رفع الفيديو
     const { error: uploadError } = await supabase.storage
       .from("posts")
       .upload(filePath, decode(base64), {
@@ -96,7 +92,6 @@ export default function CreatePostScreen() {
 
     if (uploadError) throw uploadError;
 
-    // الحصول على الرابط العام
     const {
       data: { publicUrl },
     } = supabase.storage.from("posts").getPublicUrl(filePath);
@@ -104,19 +99,14 @@ export default function CreatePostScreen() {
     return publicUrl;
   };
 
-  // 🚀 رفع الصورة باستخدام blob (أسرع من base64)
   const uploadImage = async (uri: string): Promise<string> => {
-    // ضغط الصورة أولاً
     const compressedUri = await compressImage(uri);
-
     const timestamp = Date.now();
     const filePath = `${user!.id}/${timestamp}.jpg`;
 
-    // قراءة الصورة كـ blob مباشرة (أسرع من base64)
     const response = await fetch(compressedUri);
     const blob = await response.blob();
 
-    // رفع الصورة
     const { error: uploadError } = await supabase.storage
       .from("posts")
       .upload(filePath, blob, {
@@ -127,12 +117,17 @@ export default function CreatePostScreen() {
 
     if (uploadError) throw uploadError;
 
-    // الحصول على الرابط العام
     const {
       data: { publicUrl },
     } = supabase.storage.from("posts").getPublicUrl(filePath);
 
     return publicUrl;
+  };
+
+  // 🎯 Handle Location Modal
+  const handleEnableLocation = async () => {
+    setShowLocationModal(false);
+    await getLocation();
   };
 
   const handleSubmit = async () => {
@@ -141,21 +136,9 @@ export default function CreatePostScreen() {
       return;
     }
 
+    // 🎯 Show Modal if location unavailable
     if (!lat || !lng) {
-      Alert.alert(
-        "Location Required",
-        "Location is required to post. Please enable location access and try again.",
-        [
-          {
-            text: "Enable Location",
-            onPress: () => getLocation(),
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
+      setShowLocationModal(true);
       return;
     }
 
@@ -163,7 +146,6 @@ export default function CreatePostScreen() {
     setUploadProgress(0);
 
     try {
-      // 1️⃣ رفع الملف
       setUploadProgress(10);
       let mediaUrl: string;
 
@@ -175,7 +157,6 @@ export default function CreatePostScreen() {
 
       setUploadProgress(70);
 
-      // 2️⃣ إدراج البوست
       const { error: insertError } = await supabase.from("posts").insert({
         user_id: user.id,
         media_url: mediaUrl,
@@ -230,10 +211,8 @@ export default function CreatePostScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Media Picker */}
           <MediaPicker media={media} onMediaSelect={setMedia} />
 
-          {/* Form */}
           <View
             style={[styles.form, { marginBottom: insets.bottom + insets.top }]}
           >
@@ -301,7 +280,7 @@ export default function CreatePostScreen() {
             <View style={styles.inputGroup}>
               <View style={styles.labelWithRequired}>
                 <Text style={styles.label}>Location *</Text>
-                {!lat && !lng && !locationLoading && (
+                {!lat && !lng && !locationLoading && !uploading && (
                   <Text style={styles.requiredText}>Required</Text>
                 )}
               </View>
@@ -313,6 +292,7 @@ export default function CreatePostScreen() {
                 activeOpacity={0.7}
               >
                 <MapPin size={20} color={error ? "#ef4444" : "#6366f1"} />
+
                 <View style={styles.locationContent}>
                   {locationLoading ? (
                     <View style={styles.locationRow}>
@@ -325,7 +305,7 @@ export default function CreatePostScreen() {
                     <View>
                       <Text style={styles.locationError}>{error}</Text>
                       <Text style={styles.retryButtonText}>
-                        Tap here to enable location
+                        Tap to try again
                       </Text>
                     </View>
                   ) : spotName ? (
@@ -374,7 +354,6 @@ export default function CreatePostScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Progress Bar */}
             {uploading && (
               <View style={styles.progressBarContainer}>
                 <View
@@ -386,7 +365,6 @@ export default function CreatePostScreen() {
               </View>
             )}
 
-            {/* Warning */}
             {!lat && !lng && !locationLoading && (
               <View style={styles.warningCard}>
                 <AlertCircle size={18} color="#f59e0b" />
@@ -399,6 +377,57 @@ export default function CreatePostScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* 🎯 Location Modal */}
+      <Modal
+        isVisible={showLocationModal}
+        onBackdropPress={() => {}} // 🔥 Cannot close by tapping backdrop
+        onBackButtonPress={() => setShowLocationModal(false)} // Android back button
+        backdropOpacity={0.5}
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        style={styles.modal}
+        useNativeDriver
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <View style={styles.iconContainer}>
+              <MapPin size={32} color="#6366f1" />
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowLocationModal(false)}
+              style={styles.closeButton}
+            >
+              <X size={24} color="#64748b" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.modalTitle}>Location Required</Text>
+          <Text style={styles.modalDescription}>
+            Location is required to create a post. This helps others discover
+            amazing places near them.
+          </Text>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.modalButtonPrimary}
+              onPress={handleEnableLocation}
+              activeOpacity={0.8}
+            >
+              <MapPin size={18} color="#fff" />
+              <Text style={styles.modalButtonPrimaryText}>Enable Location</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalButtonSecondary}
+              onPress={() => setShowLocationModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -572,5 +601,77 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#92400e",
     lineHeight: 18,
+  },
+  // 🎯 Modal Styles
+  modal: {
+    justifyContent: "center",
+    margin: 20,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#eef2ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 8,
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: "#64748b",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalActions: {
+    gap: 12,
+  },
+  modalButtonPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#6366f1",
+  },
+  modalButtonPrimaryText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  modalButtonSecondary: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
+    alignItems: "center",
+  },
+  modalButtonSecondaryText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748b",
   },
 });
