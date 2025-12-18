@@ -1,7 +1,7 @@
 // ============================================
 // components/PopularPosts.tsx
 // ============================================
-import { usePosts } from "@/hooks/usePosts";
+import { Post } from "@/hooks/usePosts";
 import { router } from "expo-router";
 import { MapPin, Play } from "lucide-react-native";
 import React from "react";
@@ -14,9 +14,12 @@ import {
   View,
 } from "react-native";
 
-export const PopularPosts = () => {
-  const { posts, loading } = usePosts(10);
+interface PopularPostsProps {
+  posts: Post[];
+  loading: boolean;
+}
 
+export const PopularPosts = ({ posts, loading }: PopularPostsProps) => {
   if (loading) {
     return (
       <View style={styles.container}>

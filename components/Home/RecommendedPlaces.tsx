@@ -1,7 +1,7 @@
 // ============================================
 // components/RecommendedPlaces.tsx
 // ============================================
-import { usePlaces } from "@/hooks/usePlaces";
+import { Place } from "@/hooks/usePlaces";
 import { router } from "expo-router";
 import { MapPin } from "lucide-react-native";
 import React from "react";
@@ -16,9 +16,15 @@ const categoryEmoji: Record<string, string> = {
   market: "🛍️",
 };
 
-export const RecommendedPlaces = () => {
-  const { places, loading } = usePlaces();
+interface RecommendedPlacesProps {
+  places: Place[];
+  loading: boolean;
+}
 
+export const RecommendedPlaces = ({
+  places,
+  loading,
+}: RecommendedPlacesProps) => {
   if (loading) {
     return (
       <View style={styles.container}>

@@ -223,8 +223,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   postMarker: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 20,
     backgroundColor: "#ef4444",
     borderWidth: 3,
@@ -233,11 +233,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   placeMarker: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 20,
     backgroundColor: "#f59e0b",
     borderWidth: 3,
+
     borderColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
@@ -252,7 +253,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     padding: 12,
     borderRadius: 12,
-
     minWidth: 200,
   },
   debugTitle: {
