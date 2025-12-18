@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { supabase } from "@/integrations/supabase/client";
 import { decode } from "base64-arraybuffer";
-import { File } from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { router } from "expo-router";
 import { AlertCircle, MapPin, Send, X } from "lucide-react-native";
@@ -76,52 +76,56 @@ export default function CreatePostScreen() {
     }
   };
 
-  const uploadVideo = async (uri: string): Promise<string> => {
-    const file = new File(uri);
-    const base64 = await file.base64();
-    const timestamp = Date.now();
-    const filePath = `${user!.id}/${timestamp}.mp4`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("posts")
-      .upload(filePath, decode(base64), {
-        contentType: "video/mp4",
-        cacheControl: "3600",
-        upsert: false,
+  const UploadMedia = async (
+    uri: string,
+    folder: string,
+    contentType: string,
+    ext: string
+  ): Promise<string> => {
+    try {
+      // 1. Read file as Base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: "base64",
       });
 
-    if (uploadError) throw uploadError;
+      // 2. Convert to ArrayBuffer
+      const arrayBuffer = decode(base64);
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("posts").getPublicUrl(filePath);
+      // 3. Generate path
+      const timestamp = Date.now();
+      const filePath = `${user!.id}/${timestamp}.${ext}`;
 
-    return publicUrl;
+      // 4. Upload
+      const { error: uploadError } = await supabase.storage
+        .from(folder)
+        .upload(filePath, arrayBuffer, {
+          contentType: contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 5. Get Public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(folder).getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Upload helper error:", error);
+      throw error;
+    }
+  };
+
+  const uploadVideo = async (uri: string): Promise<string> => {
+    return UploadMedia(uri, "posts", "video/mp4", "mp4");
   };
 
   const uploadImage = async (uri: string): Promise<string> => {
+    // Optional: Compress first if needed, but for now upload directly or use existing compress
     const compressedUri = await compressImage(uri);
-    const timestamp = Date.now();
-    const filePath = `${user!.id}/${timestamp}.jpg`;
-
-    const response = await fetch(compressedUri);
-    const blob = await response.blob();
-
-    const { error: uploadError } = await supabase.storage
-      .from("posts")
-      .upload(filePath, blob, {
-        contentType: "image/jpeg",
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("posts").getPublicUrl(filePath);
-
-    return publicUrl;
+    return UploadMedia(compressedUri, "posts", "image/jpeg", "jpg");
   };
 
   // 🎯 Handle Location Modal

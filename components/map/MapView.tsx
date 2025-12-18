@@ -28,8 +28,8 @@ const isValidCoordinate = (lat: number, lng: number): boolean => {
 };
 
 export const ClusteredMapView: React.FC = () => {
-  const { posts, loading: postsLoading } = usePosts(50);
-  const { places, loading: placesLoading } = usePlaces();
+  const { posts, loading: postsLoading, error: postsError } = usePosts(50);
+  const { places, loading: placesLoading, error: placesError } = usePlaces();
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -37,8 +37,21 @@ export const ClusteredMapView: React.FC = () => {
 
   // Log data for debugging
   useEffect(() => {
+    // Always log posts/places when loading finished to help Android debugging
     if (!postsLoading && !placesLoading) {
-      // Log first post with coordinates
+      try {
+        console.log(`Posts total: ${posts.length}`, posts.slice(0, 5));
+      } catch (e) {
+        console.log("Could not stringify posts", e);
+      }
+
+      try {
+        console.log(`Places total: ${places.length}`, places.slice(0, 5));
+      } catch (e) {
+        console.log("Could not stringify places", e);
+      }
+
+      // Log first valid post for quick coordinate checks
       const firstPost = posts.find((p) => p.lat && p.lng);
       if (firstPost) {
         console.log("Sample post:", {
@@ -135,7 +148,6 @@ export const ClusteredMapView: React.FC = () => {
                   media_type: post.media_type,
                 })
               }
-              tracksViewChanges={false}
             >
               <View style={styles.postMarker}>
                 <Text style={styles.markerEmoji}>📸</Text>
@@ -163,7 +175,6 @@ export const ClusteredMapView: React.FC = () => {
                   type: "place",
                 })
               }
-              tracksViewChanges={false}
             >
               <View style={styles.placeMarker}>
                 <Text style={styles.markerEmoji}>🏯</Text>
