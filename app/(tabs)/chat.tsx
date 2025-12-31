@@ -10,18 +10,38 @@ import { MapPin, Trash2 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useKeyboardHandler } from "react-native-keyboard-controller";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+
+// Animation hook for smooth keyboard handling
+const useGradualAnimation = () => {
+  const height = useSharedValue(0);
+
+  useKeyboardHandler(
+    {
+      onMove: (event) => {
+        "worklet";
+        height.value = Math.max(event.height, 0);
+      },
+    },
+    []
+  );
+
+  return { height };
+};
 
 interface ChatContainerProps {
   navigation: any;
@@ -33,9 +53,22 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const inset = useSafeAreaInsets();
 
+  // Keyboard animation
+  const { height } = useGradualAnimation();
+  const TAB_BAR_HEIGHT = 60; // 70px height + 25px bottom offset + 5px buffer
+
+  const fakeView = useAnimatedStyle(() => {
+    return {
+      height: Math.max(Math.abs(height.value), TAB_BAR_HEIGHT),
+    };
+  }, []);
+
   useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
+    // Small delay to ensure layout is complete before scrolling
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [messages, height]); // Scroll when messages change or keyboard moves
 
   useEffect(() => {
     if (error) {
@@ -79,94 +112,89 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      >
-        <View
-          style={[styles.container, { marginBottom: inset.bottom + inset.top }]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={handleClear}
-                disabled={messages.length === 0}
-                activeOpacity={0.7}
-              >
-                <Trash2
-                  size={20}
-                  color={messages.length === 0 ? "#ccc" : "#666"}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.headerRight}>
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerTitle}>Japan Travel Assistant</Text>
-                <Text style={styles.headerSubtitle}>{user?.email} 🇯🇵</Text>
-              </View>
-              <View style={styles.headerIcon}>
-                <MapPin size={20} color="#6366f1" />
-              </View>
-            </View>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={handleClear}
+              disabled={messages.length === 0}
+              activeOpacity={0.7}
+            >
+              <Trash2
+                size={20}
+                color={messages.length === 0 ? "#ccc" : "#666"}
+              />
+            </TouchableOpacity>
           </View>
 
-          {/* Messages */}
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.messagesContainer}
-            contentContainerStyle={styles.messagesContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {messages.length === 0 ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIcon}>
-                  <Text style={styles.emptyEmoji}>🗾</Text>
-                </View>
-                <Text style={styles.emptyTitle}>Welcome!</Text>
-                <Text style={styles.emptySubtitle}>
-                  I'm your Japan travel assistant. Ask me about places,
-                  transportation, food, or anything else!
-                </Text>
-                <View style={styles.suggestionsContainer}>
-                  {suggestions.map((suggestion) => (
-                    <TouchableOpacity
-                      key={suggestion}
-                      style={styles.suggestionButton}
-                      onPress={() => sendMessage(suggestion)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.suggestionText}>{suggestion}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            ) : (
-              messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  role={message.role}
-                  content={message.content}
-                />
-              ))
-            )}
-
-            {isLoading && (
-              <View style={styles.loadingContainer}>
-                <View style={styles.loadingDot} />
-                <View style={[styles.loadingDot, styles.loadingDot2]} />
-                <View style={[styles.loadingDot, styles.loadingDot3]} />
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Input */}
-          <ChatInput onSend={sendMessage} isLoading={isLoading} />
+          <View style={styles.headerRight}>
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerTitle}>Japan Travel Assistant</Text>
+              <Text style={styles.headerSubtitle}>{user?.email} 🇯🇵</Text>
+            </View>
+            <View style={styles.headerIcon}>
+              <MapPin size={20} color="#6366f1" />
+            </View>
+          </View>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* Messages */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {messages.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Text style={styles.emptyEmoji}>🗾</Text>
+              </View>
+              <Text style={styles.emptyTitle}>Welcome!</Text>
+              <Text style={styles.emptySubtitle}>
+                I'm your Japan travel assistant. Ask me about places,
+                transportation, food, or anything else!
+              </Text>
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion}
+                    style={styles.suggestionButton}
+                    onPress={() => sendMessage(suggestion)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ) : (
+            messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                role={message.role}
+                content={message.content}
+              />
+            ))
+          )}
+
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <View style={styles.loadingDot} />
+              <View style={[styles.loadingDot, styles.loadingDot2]} />
+              <View style={[styles.loadingDot, styles.loadingDot3]} />
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Input */}
+        <ChatInput onSend={sendMessage} isLoading={isLoading} />
+
+        {/* Animated View to push content up */}
+        <Animated.View style={fakeView} />
+      </View>
     </SafeAreaView>
   );
 };
