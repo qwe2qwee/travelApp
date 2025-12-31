@@ -1,0 +1,272 @@
+// import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+
+// const corsHeaders = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers":
+//     "authorization, x-client-info, apikey, content-type",
+// };
+
+// // Helper function to clean and parse JSON from AI response
+// function extractJSON(content: string): any {
+//   try {
+//     // Try direct parsing first
+//     return JSON.parse(content);
+//   } catch {
+//     // Remove markdown code blocks if present
+//     let cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+
+//     // Try to extract JSON object
+//     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+//     if (jsonMatch) {
+//       return JSON.parse(jsonMatch[0]);
+//     }
+
+//     throw new Error("Could not extract valid JSON from response");
+//   }
+// }
+
+// // Retry logic for API calls
+// async function callGroqWithRetry(payload: any, maxRetries = 2): Promise<any> {
+//   let lastError;
+
+//   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+//     try {
+//       const response = await fetch(
+//         "https://api.groq.com/openai/v1/chat/completions",
+//         {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${GROQ_API_KEY}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify(payload),
+//         }
+//       );
+
+//       if (!response.ok) {
+//         const errText = await response.text();
+
+//         // If rate limited, wait and retry
+//         if (response.status === 429 && attempt < maxRetries) {
+//           const retryAfter = response.headers.get("retry-after");
+//           const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 2000;
+//           console.log(`Rate limited. Retrying after ${waitTime}ms...`);
+//           await new Promise((resolve) => setTimeout(resolve, waitTime));
+//           continue;
+//         }
+
+//         throw new Error(`Groq API error (${response.status}): ${errText}`);
+//       }
+
+//       return await response.json();
+//     } catch (error) {
+//       lastError = error;
+//       if (attempt < maxRetries) {
+//         console.log(`Attempt ${attempt + 1} failed. Retrying...`);
+//         await new Promise((resolve) => setTimeout(resolve, 1000));
+//       }
+//     }
+//   }
+
+//   throw lastError;
+// }
+
+// serve(async (req) => {
+//   // Handle CORS preflight
+//   if (req.method === "OPTIONS") {
+//     return new Response(null, { headers: corsHeaders });
+//   }
+
+//   try {
+//     const { destination, days, interests, budget, travelStyle } =
+//       await req.json();
+
+//     // Validation
+//     if (!destination || !days) {
+//       return new Response(
+//         JSON.stringify({
+//           error: "Missing required fields",
+//           details: "Both 'destination' and 'days' are required",
+//         }),
+//         {
+//           status: 400,
+//           headers: { ...corsHeaders, "Content-Type": "application/json" },
+//         }
+//       );
+//     }
+
+//     // Validate days (1-14 reasonable range)
+//     const numDays = parseInt(days);
+//     if (isNaN(numDays) || numDays < 1 || numDays > 15) {
+//       return new Response(
+//         JSON.stringify({
+//           error: "Invalid days",
+//           details: "Days must be between 1 and 14",
+//         }),
+//         {
+//           status: 400,
+//           headers: { ...corsHeaders, "Content-Type": "application/json" },
+//         }
+//       );
+//     }
+
+//     // Build context
+//     const interestsText =
+//       interests?.length > 0
+//         ? interests.join(", ")
+//         : "general sightseeing and cultural experiences";
+
+//     const budgetText = budget || "moderate";
+//     const styleText = travelStyle || "balanced";
+
+//     // Enhanced prompt with more detail
+//     const prompt = `Create a detailed ${numDays}-day travel itinerary for ${destination}.
+
+// TRAVELER PREFERENCES:
+// - Interests: ${interestsText}
+// - Budget: ${budgetText}
+// - Travel Style: ${styleText}
+
+// REQUIREMENTS:
+// 1. Include specific place names, addresses when relevant
+// 2. Suggest actual restaurants and cafes with cuisine types
+// 3. Include approximate costs where helpful
+// 4. Consider travel time between locations
+// 5. Mix popular attractions with hidden gems
+// 6. Include rest/free time
+// 7. Add practical tips (best time to visit, booking advice, etc.)
+
+// OUTPUT FORMAT (JSON only, no markdown):
+// {
+//   "destination": "${destination}",
+//   "duration": ${numDays},
+//   "overview": "Brief 2-3 sentence trip summary",
+//   "bestTimeToVisit": "season/months recommendation",
+//   "tips": [
+//     "Practical tip 1",
+//     "Practical tip 2"
+//   ],
+//   "days": [
+//     {
+//       "day": 1,
+//       "title": "Day theme or area",
+//       "activities": [
+//         {
+//           "time": "Morning (9:00-12:00)",
+//           "activity": "Specific activity name",
+//           "location": "Place name and area",
+//           "description": "What to do and why it's special",
+//           "tips": "Optional: booking info, best time, etc.",
+//           "estimatedCost": "Optional: approximate cost"
+//         },
+//         {
+//           "time": "Afternoon (13:00-17:00)",
+//           "activity": "...",
+//           "location": "...",
+//           "description": "..."
+//         },
+//         {
+//           "time": "Evening (18:00-22:00)",
+//           "activity": "...",
+//           "location": "...",
+//           "description": "..."
+//         }
+//       ],
+//       "meals": {
+//         "lunch": "Restaurant suggestion with cuisine type",
+//         "dinner": "Restaurant suggestion with cuisine type"
+//       },
+//       "transportation": "How to get around this day"
+//     }
+//   ],
+//   "essentialInfo": {
+//     "currency": "Local currency",
+//     "language": "Primary language(s)",
+//     "transportation": "Getting around tips",
+//     "safety": "Key safety considerations"
+//   }
+// }`;
+
+//     console.log(`📍 Generating ${numDays}-day itinerary for ${destination}`);
+
+//     // Use faster model for better rate limits
+//     const data = await callGroqWithRetry({
+//       model: "llama-3.1-8b-instant", // Changed to faster model with higher limits
+//       messages: [
+//         {
+//           role: "system",
+//           content:
+//             "You are an expert travel planner with deep knowledge of destinations worldwide. Provide detailed, practical itineraries in valid JSON format only. No markdown, no explanations, just pure JSON.",
+//         },
+//         { role: "user", content: prompt },
+//       ],
+//       max_tokens: 2500, // Increased for more detailed responses
+//       temperature: 0.7,
+//       response_format: { type: "json_object" }, // Force JSON output
+//     });
+
+//     const content = data.choices?.[0]?.message?.content || "";
+
+//     if (!content) {
+//       throw new Error("Empty response from AI");
+//     }
+
+//     console.log("✅ Received response from Groq");
+
+//     // Parse and validate JSON
+//     const itinerary = extractJSON(content);
+
+//     // Basic validation
+//     if (!itinerary.days || !Array.isArray(itinerary.days)) {
+//       throw new Error("Invalid itinerary format: missing days array");
+//     }
+
+//     console.log(
+//       `✅ Successfully generated ${itinerary.days.length}-day itinerary`
+//     );
+
+//     return new Response(
+//       JSON.stringify({
+//         success: true,
+//         itinerary,
+//         metadata: {
+//           generatedAt: new Date().toISOString(),
+//           destination,
+//           duration: numDays,
+//         },
+//       }),
+//       {
+//         headers: { ...corsHeaders, "Content-Type": "application/json" },
+//       }
+//     );
+//   } catch (error) {
+//     console.error("❌ Error in generate-itinerary:", error);
+
+//     const isRateLimitError =
+//       error instanceof Error &&
+//       (error.message.includes("429") || error.message.includes("rate limit"));
+
+//     const message =
+//       error instanceof Error ? error.message : "Unknown error occurred";
+//     const statusCode = isRateLimitError ? 429 : 500;
+
+//     return new Response(
+//       JSON.stringify({
+//         success: false,
+//         error: isRateLimitError
+//           ? "Rate limit exceeded. Please try again in a moment."
+//           : "Failed to generate itinerary",
+//         details: message,
+//         timestamp: new Date().toISOString(),
+//       }),
+//       {
+//         status: statusCode,
+//         headers: { ...corsHeaders, "Content-Type": "application/json" },
+//       }
+//     );
+//   }
+// });
+
+// THESE ALL IN THE DATABASE  EDGE FUNCTION
