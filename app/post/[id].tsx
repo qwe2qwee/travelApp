@@ -1,6 +1,8 @@
 // ============================================
 // app/post/[id].tsx - Post Detail Screen (Fixed)
 // ============================================
+import { useAuth } from "@/contexts/AuthContext";
+import { usePosts } from "@/hooks/usePosts";
 import { supabase } from "@/integrations/supabase/client";
 import { router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -11,10 +13,12 @@ import {
   MapPin,
   Navigation,
   Share2,
+  Trash2,
   Video as VideoIcon,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   Linking,
   Platform,
@@ -29,6 +33,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 interface PostDetail {
   id: string;
+  user_id: string;
   title: string | null;
   caption: string | null;
   category: string | null;
@@ -58,6 +63,10 @@ export default function PostDetailScreen() {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const { deletePost } = usePosts();
+  const isOwner = user && post && user.id === post.user_id;
 
   // ✅ Initialize video player correctly - will be set when post loads
   const player = useVideoPlayer(
@@ -131,6 +140,33 @@ export default function PostDetailScreen() {
     } catch (error) {
       console.log("Share cancelled");
     }
+  };
+
+  const handleDelete = () => {
+    if (!post) return;
+
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post? This action cannot be undone.",
+      [
+        { text: "Cancel", onPress: () => {}, style: "cancel" },
+        {
+          text: "Delete",
+          onPress: async () => {
+            setDeleting(true);
+            const result = await deletePost(post.id);
+            setDeleting(false);
+
+            if (result.success) {
+              router.back();
+            } else {
+              Alert.alert("Error", result.error || "Failed to delete post");
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -238,6 +274,15 @@ export default function PostDetailScreen() {
                 fill={isSaved ? "#6366f1" : "none"}
               />
             </TouchableOpacity>
+            {isOwner && (
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={deleting}
+                style={styles.iconButton}
+              >
+                <Trash2 size={20} color="#ef4444" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
