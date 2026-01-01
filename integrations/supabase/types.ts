@@ -191,6 +191,79 @@ export type Database = {
         };
         Relationships: [];
       };
+      saved_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          item_id: string;
+          item_type: "post" | "place";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          item_id: string;
+          item_type: "post" | "place";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          item_id?: string;
+          item_type?: "post" | "place";
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saved_items_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      user_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          interests: string[];
+          preferred_cities: string[];
+          budget_level: "budget" | "moderate" | "luxury";
+          travel_style: "relaxed" | "balanced" | "intensive";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          interests?: string[];
+          preferred_cities?: string[];
+          budget_level?: "budget" | "moderate" | "luxury";
+          travel_style?: "relaxed" | "balanced" | "intensive";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          interests?: string[];
+          preferred_cities?: string[];
+          budget_level?: "budget" | "moderate" | "luxury";
+          travel_style?: "relaxed" | "balanced" | "intensive";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
