@@ -40,13 +40,11 @@ export const ClusteredMapView: React.FC = () => {
     // Always log posts/places when loading finished to help Android debugging
     if (!postsLoading && !placesLoading) {
       try {
-        console.log(`Posts total: ${posts.length}`, posts.slice(0, 5));
       } catch (e) {
         console.log("Could not stringify posts", e);
       }
 
       try {
-        console.log(`Places total: ${places.length}`, places.slice(0, 5));
       } catch (e) {
         console.log("Could not stringify places", e);
       }
@@ -54,13 +52,13 @@ export const ClusteredMapView: React.FC = () => {
       // Log first valid post for quick coordinate checks
       const firstPost = posts.find((p) => p.lat && p.lng);
       if (firstPost) {
-        console.log("Sample post:", {
-          id: firstPost.id,
-          lat: firstPost.lat,
-          lng: firstPost.lng,
-          latType: typeof firstPost.lat,
-          lngType: typeof firstPost.lng,
-        });
+        // console.log("Sample post:", {
+        //   id: firstPost.id,
+        //   lat: firstPost.lat,
+        //   lng: firstPost.lng,
+        //   latType: typeof firstPost.lat,
+        //   lngType: typeof firstPost.lng,
+        // });
       }
     }
   }, [posts, places, postsLoading, placesLoading]);

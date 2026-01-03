@@ -5,7 +5,6 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/hooks/useChat";
-import { router } from "expo-router";
 import { MapPin, Trash2 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
@@ -90,24 +89,10 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
     ]);
   };
 
-  const handleSignOut = async () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await signOut();
-          router.replace("/(auth)/auth");
-        },
-      },
-    ]);
-  };
-
   const suggestions = [
-    "Best time to visit Tokyo?",
-    "How to use JR Pass?",
-    "Halal restaurants in Osaka",
+    "Best time to visit Riyadh?",
+    "How to use Saudi Arabia Visa?",
+    "Halal restaurants in Riyadh",
   ];
 
   return (
