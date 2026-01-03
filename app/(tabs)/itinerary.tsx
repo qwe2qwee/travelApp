@@ -7,8 +7,7 @@ import { LoadingMessages } from "@/components/LoadingMessages";
 import { PopularDestinations } from "@/components/PopularDestinations";
 import { TripForm } from "@/components/TripForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Compass, LogOut, Plane, Save } from "lucide-react-native";
+import { Compass, LogOut, Plane } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
@@ -103,43 +102,6 @@ export default function Itinerary() {
     }
   };
 
-  // Save itinerary to database
-  const handleSaveItinerary = async () => {
-    if (!itinerary || !destination || !user) {
-      Alert.alert("Error", "Cannot save itinerary. Missing data.");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const { error } = await supabase.from("itineraries").insert([
-        {
-          user_id: user.id,
-          destination: destination,
-          days: days,
-          interests: interests,
-          itinerary_data: itinerary,
-        },
-      ]);
-
-      if (error) throw error;
-
-      setIsSaved(true);
-      Alert.alert("Success", "Your itinerary has been saved!", [
-        { text: "OK" },
-      ]);
-    } catch (error) {
-      console.error("Error saving itinerary:", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to save itinerary",
-        [{ text: "OK" }]
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
@@ -209,25 +171,6 @@ export default function Itinerary() {
                   itinerary={itinerary}
                   destination={destination}
                 />
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    isSaved && styles.saveButtonSuccess,
-                    isSaving && styles.saveButtonDisabled,
-                  ]}
-                  onPress={handleSaveItinerary}
-                  disabled={isSaving || isSaved}
-                  activeOpacity={0.8}
-                >
-                  <Save size={20} color={isSaved ? "#10b981" : "#fff"} />
-                  <Text style={styles.saveButtonText}>
-                    {isSaving
-                      ? "Saving..."
-                      : isSaved
-                      ? "Saved ✓"
-                      : "Save Itinerary"}
-                  </Text>
-                </TouchableOpacity>
               </>
             )}
 
