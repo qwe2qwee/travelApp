@@ -5,9 +5,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { MapBottomSheet, SelectedItem } from "./MapBottomSheet";
 
-const JAPAN_CENTER: Region = {
-  latitude: 36.2048,
-  longitude: 138.2529,
+const SAUDI_ARABIA_CENTER: Region = {
+  latitude: 23.8859,
+  longitude: 45.0792,
   latitudeDelta: 10,
   longitudeDelta: 10,
 };
@@ -116,7 +116,7 @@ export const ClusteredMapView: React.FC = () => {
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
-        initialRegion={JAPAN_CENTER}
+        initialRegion={SAUDI_ARABIA_CENTER}
         showsCompass
         showsScale
         onMapReady={handleMapReady}

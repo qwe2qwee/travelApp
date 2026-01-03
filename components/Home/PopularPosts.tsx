@@ -43,7 +43,7 @@ export const PopularPosts = ({ posts, loading }: PopularPostsProps) => {
         <Text style={styles.title}>📸 Popular Posts</Text>
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>
-            No posts yet. Be the first to share your Japan experience!
+            No posts yet. Be the first to share your Saudi Arabia experience!
           </Text>
         </View>
       </View>

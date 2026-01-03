@@ -3,58 +3,74 @@ import {
   Landmark,
   MapPin,
   Mountain,
-  TreePine,
+  Star,
 } from "lucide-react-native";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const DESTINATIONS = [
   {
-    name: "Tokyo",
-    emoji: "🗼",
+    name: "Riyadh",
+    emoji: "🏙️",
     image:
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=300&q=80",
-    category: "City",
+      "https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?w=300&q=80",
+    category: "city",
     categoryIcon: Building2,
   },
   {
-    name: "Kyoto",
-    emoji: "⛩️",
+    name: "Jeddah",
+    emoji: "🌊",
     image:
-      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=300&q=80",
-    category: "Culture",
+      "https://images.unsplash.com/photo-1578895101408-1a36b834405b?w=300&q=80",
+    category: "coastal",
+    categoryIcon: Building2,
+  },
+  {
+    name: "Makkah",
+    emoji: "🕋",
+    image:
+      "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=300&q=80",
+    category: "islamic",
+    categoryIcon: Star,
+  },
+  {
+    name: "Madinah",
+    emoji: "🕌",
+    image:
+      "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=300&q=80",
+    category: "islamic",
+    categoryIcon: Star,
+  },
+  {
+    name: "AlUla",
+    emoji: "🏛️",
+    image:
+      "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=300&q=80",
+    category: "heritage",
     categoryIcon: Landmark,
   },
   {
-    name: "Osaka",
-    emoji: "🏯",
+    name: "Dubai",
+    emoji: "🌆",
     image:
-      "https://images.unsplash.com/photo-1590559899731-a382839e5549?w=300&q=80",
-    category: "City",
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=300&q=80",
+    category: "modern",
     categoryIcon: Building2,
   },
   {
-    name: "Hakone",
-    emoji: "🗻",
+    name: "Abu Dhabi",
+    emoji: "🕌",
     image:
-      "https://images.unsplash.com/photo-1480796927426-f609979314bd?w=300&q=80",
-    category: "Nature",
+      "https://images.unsplash.com/photo-1512632578888-169bbbc64f33?w=300&q=80",
+    category: "culture",
+    categoryIcon: Landmark,
+  },
+  {
+    name: "Abha",
+    emoji: "⛰️",
+    image:
+      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&q=80",
+    category: "nature",
     categoryIcon: Mountain,
-  },
-  {
-    name: "Nara",
-    emoji: "🦌",
-    image:
-      "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=300&q=80",
-    category: "Culture",
-    categoryIcon: Landmark,
-  },
-  {
-    name: "Hokkaido",
-    emoji: "❄️",
-    image:
-      "https://images.unsplash.com/photo-1605452929007-91d875f665ad?w=300&q=80",
-    category: "Nature",
-    categoryIcon: TreePine,
   },
 ];
 
@@ -68,7 +84,7 @@ export function PopularDestinations({ onSelect }: PopularDestinationsProps) {
       {/* Header */}
       <View style={styles.header}>
         <MapPin size={16} color="#6366f1" />
-        <Text style={styles.headerTitle}>Popular in Japan</Text>
+        <Text style={styles.headerTitle}>Popular in Saudi Arabia</Text>
       </View>
 
       {/* Grid using flexbox */}

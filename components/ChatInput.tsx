@@ -36,7 +36,7 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
         style={styles.input}
         value={input}
         onChangeText={setInput}
-        placeholder="Ask about traveling to Japan..."
+        placeholder="Ask about traveling to Saudi Arabia..."
         placeholderTextColor="#999"
         editable={!disabled && !isLoading}
         multiline

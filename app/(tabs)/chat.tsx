@@ -131,8 +131,10 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
 
           <View style={styles.headerRight}>
             <View style={styles.headerInfo}>
-              <Text style={styles.headerTitle}>Japan Travel Assistant</Text>
-              <Text style={styles.headerSubtitle}>{user?.email} 🇯🇵</Text>
+              <Text style={styles.headerTitle}>
+                Saudi Arabia Travel Assistant
+              </Text>
+              <Text style={styles.headerSubtitle}>{user?.email} 🇸🇦</Text>
             </View>
             <View style={styles.headerIcon}>
               <MapPin size={20} color="#6366f1" />
@@ -150,11 +152,11 @@ export const ChatContainer = ({ navigation }: ChatContainerProps) => {
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}>
-                <Text style={styles.emptyEmoji}>🗾</Text>
+                <Text style={styles.emptyEmoji}>�</Text>
               </View>
               <Text style={styles.emptyTitle}>Welcome!</Text>
               <Text style={styles.emptySubtitle}>
-                I'm your Japan travel assistant. Ask me about places,
+                I'm your Saudi Arabia travel assistant. Ask me about places,
                 transportation, food, or anything else!
               </Text>
               <View style={styles.suggestionsContainer}>

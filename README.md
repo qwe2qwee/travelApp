@@ -62,7 +62,7 @@ A modern, full-featured mobile application for travel enthusiasts, built with **
 
 ### 🤖 AI-Powered Features
 
-- **Japan Travel Chat**: AI travel assistant for Japan recommendations
+- **Saudi Arabia Travel Chat**: AI travel assistant for Saudi Arabia recommendations
 
   - Powered by Groq AI (fast & free)
   - Real-time travel recommendations
@@ -108,7 +108,7 @@ A modern, full-featured mobile application for travel enthusiasts, built with **
   - AI Integration: Groq API (fast LLM inference)
   - Language: TypeScript
   - Functions:
-    - `japan-chat`: Travel assistant chatbot
+    - `saudi-chat`: Travel assistant chatbot
     - `generate-itinerary`: AI-powered trip planning
 
 ### Development Tools
@@ -173,9 +173,9 @@ This app uses **Supabase Edge Functions** (serverless functions running on Deno)
 
 ### Available Edge Functions
 
-#### 1️⃣ **japan-chat** - Travel Assistant Chatbot
+#### 1️⃣ **saudi-chat** - Travel Assistant Chatbot
 
-A conversational AI assistant specialized in Japan travel recommendations.
+A conversational AI assistant specialized in Saudi Arabia travel recommendations.
 
 **Features:**
 
@@ -354,7 +354,7 @@ For better map functionality:
 
 The app uses AI-powered Edge Functions for intelligent features:
 
-#### a) Japan Travel Chat Assistant
+#### a) Saudi Arabia Travel Chat Assistant
 
 Provides intelligent travel recommendations using Groq AI API.
 
@@ -364,7 +364,7 @@ Provides intelligent travel recommendations using Groq AI API.
 2. Deploy the function:
 
 ```bash
-supabase functions deploy japan-chat --project-id your_project_id
+supabase functions deploy saudi-chat --project-id your_project_id
 ```
 
 3. Set environment variables in Supabase Dashboard:
@@ -374,14 +374,14 @@ supabase functions deploy japan-chat --project-id your_project_id
 **Usage in app:**
 
 ```typescript
-const response = await supabase.functions.invoke('japan-chat', {
+const response = await supabase.functions.invoke('saudi-chat', {
   body: { messages: [...] }
 });
 ```
 
 #### b) Generate Itinerary
 
-AI-powered itinerary generation for trips to Japan.
+AI-powered itinerary generation for trips to Saudi Arabia.
 
 **Setup:**
 

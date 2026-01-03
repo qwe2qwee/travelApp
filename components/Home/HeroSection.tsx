@@ -19,7 +19,7 @@ export const HeroSection = () => {
       {/* Content */}
       <View style={styles.content}>
         {user && <Text style={styles.welcomeText}>Welcome back 👋</Text>}
-        <Text style={styles.title}>Discover Japan</Text>
+        <Text style={styles.title}>Discover Saudi Arabia</Text>
         <Text style={styles.subtitle}>
           Explore posts from travelers & craft experiences
         </Text>
