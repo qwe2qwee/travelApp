@@ -70,7 +70,7 @@ export const ClusteredMapView: React.FC = () => {
 
   const handleMapReady = useCallback(() => {
     setMapReady(true);
-    console.log("Map is ready");
+    // console.log("Map is ready");
   }, []);
 
   // Filter and parse posts with valid coordinates
