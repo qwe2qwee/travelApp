@@ -64,6 +64,7 @@ export default function CreatePostScreen() {
     }
 
     setUploading(true);
+    let uploadedFilePath: string | null = null;
 
     try {
       // 1. Read file as base64 using the new File API
@@ -75,6 +76,7 @@ export default function CreatePostScreen() {
       const ext = media.type === "video" ? "mp4" : "jpg";
       const timestamp = Date.now();
       const filePath = `${user.id}/${timestamp}.${ext}`;
+      uploadedFilePath = filePath;
 
       // 3. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -103,7 +105,9 @@ export default function CreatePostScreen() {
         spot_name: spotName,
       });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        throw new Error(insertError.message || "Failed to save post data");
+      }
 
       Alert.alert("Success", "Your post has been shared successfully!", [
         {
@@ -113,7 +117,20 @@ export default function CreatePostScreen() {
       ]);
     } catch (error) {
       console.error("Error creating post:", error);
-      Alert.alert("Error", "Failed to create post. Please try again.");
+
+      // If upload was successful but database insert failed, clean up the file
+      if (uploadedFilePath) {
+        try {
+          await supabase.storage.from("posts").remove([uploadedFilePath]);
+          console.log("Cleaned up uploaded file after failed post creation");
+        } catch (cleanupError) {
+          console.error("Failed to cleanup uploaded file:", cleanupError);
+        }
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create post";
+      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
     } finally {
       setUploading(false);
     }

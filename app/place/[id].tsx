@@ -1,6 +1,7 @@
 // ============================================
 // app/place/[id].tsx - Place Detail Screen
 // ============================================
+import { useSavedItems } from "@/hooks/useSavedItems";
 import { supabase } from "@/integrations/supabase/client";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -13,6 +14,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   Linking,
   Platform,
@@ -55,10 +57,19 @@ export default function PlaceDetailScreen() {
   const [place, setPlace] = useState<PlaceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const { saveItem, removeItem, isSaved: checkIsSaved } = useSavedItems();
 
   useEffect(() => {
     fetchPlace();
   }, [id]);
+
+  // ✅ استعادة حالة الحفظ من قاعدة البيانات عند التحميل
+  useEffect(() => {
+    if (id) {
+      const saved = checkIsSaved(id, "place");
+      setIsSaved(saved);
+    }
+  }, [id, checkIsSaved]);
 
   const fetchPlace = async () => {
     if (!id) return;
@@ -74,6 +85,9 @@ export default function PlaceDetailScreen() {
         console.error("Error fetching place:", error);
       } else {
         setPlace(data);
+        // ✅ استعادة حالة الحفظ بعد تحميل البيانات
+        const saved = checkIsSaved(id, "place");
+        setIsSaved(saved);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -194,7 +208,20 @@ export default function PlaceDetailScreen() {
               <Share2 size={20} color="#000" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setIsSaved(!isSaved)}
+              onPress={async () => {
+                if (!id) return;
+                try {
+                  if (checkIsSaved(id, "place")) {
+                    const success = await removeItem(id, "place");
+                    if (success) setIsSaved(false);
+                  } else {
+                    const success = await saveItem(id, "place");
+                    if (success) setIsSaved(true);
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to save place");
+                }
+              }}
               style={styles.iconButton}
             >
               <Bookmark

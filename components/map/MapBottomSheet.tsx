@@ -1,3 +1,4 @@
+import { useSavedItems } from "@/hooks/useSavedItems";
 import { router } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import {
@@ -11,6 +12,7 @@ import {
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Animated,
   Dimensions,
   Image,
@@ -48,6 +50,7 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
   item,
 }) => {
   const [isSaved, setIsSaved] = useState(false);
+  const { saveItem, removeItem, isSaved: checkIsSaved } = useSavedItems();
   const [slideAnim] = useState(new Animated.Value(1));
   const player = useVideoPlayer(
     item?.image ? { uri: item.image } : null,
@@ -59,9 +62,41 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
     }
   );
 
+  // ✅ استعادة حالة الحفظ من قاعدة البيانات عند تغيير العنصر
   useEffect(() => {
-    setIsSaved(false);
-  }, [item?.id]);
+    if (item?.id) {
+      const saved = checkIsSaved(item.id, item.type);
+      setIsSaved(saved);
+    } else {
+      setIsSaved(false);
+    }
+  }, [item?.id, item?.type, checkIsSaved]);
+
+  const handleSave = useCallback(async () => {
+    if (!item?.id) {
+      Alert.alert("Error", "Cannot save item. Missing ID.");
+      return;
+    }
+
+    try {
+      if (checkIsSaved(item.id, item.type)) {
+        const success = await removeItem(item.id, item.type);
+        if (success) {
+          setIsSaved(false);
+          Alert.alert("Removed", "Item removed from saved items");
+        }
+      } else {
+        const success = await saveItem(item.id, item.type);
+        if (success) {
+          setIsSaved(true);
+          Alert.alert("Saved", "Item saved to your favorites");
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to save item. Please try again.");
+      console.error("Save error:", error);
+    }
+  }, [item, saveItem, removeItem, checkIsSaved]);
 
   useEffect(() => {
     if (isOpen && player) {
@@ -116,11 +151,6 @@ export const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
     }
     onClose();
   }, [item, onClose]);
-
-  const handleSave = useCallback(() => {
-    setIsSaved((prev) => !prev);
-    // TODO: Add save to database logic
-  }, []);
 
   if (!item) return null;
 

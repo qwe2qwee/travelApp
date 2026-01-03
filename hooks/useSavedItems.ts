@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface SavedItem {
   id: string;
@@ -11,8 +11,13 @@ export interface SavedItem {
 
 export const useSavedItems = () => {
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ تحميل العناصر المحفوظة عند بدء التطبيق
+  useEffect(() => {
+    fetchSavedItems();
+  }, []);
 
   // Fetch all saved items for current user
   const fetchSavedItems = async () => {
@@ -21,7 +26,11 @@ export const useSavedItems = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        setSavedItems([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error: fetchError } = await supabase
         .from("saved_items")
@@ -58,27 +67,33 @@ export const useSavedItems = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error: saveError } = await supabase.from("saved_items").insert([
-        {
-          user_id: user.id,
-          item_id: itemId,
-          item_type: itemType,
-        },
-      ]);
+      const { data, error: saveError } = await supabase
+        .from("saved_items")
+        .insert([
+          {
+            user_id: user.id,
+            item_id: itemId,
+            item_type: itemType,
+          },
+        ])
+        .select()
+        .single();
 
       if (saveError) throw saveError;
 
-      // Update local state
-      setSavedItems([
-        ...savedItems,
-        {
-          id: `temp-${Date.now()}`,
-          user_id: user.id,
-          item_id: itemId,
-          item_type: itemType,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      // Update local state with real data from database
+      if (data) {
+        setSavedItems([
+          ...savedItems,
+          {
+            id: data.id,
+            user_id: data.user_id,
+            item_id: data.item_id,
+            item_type: data.item_type,
+            created_at: data.created_at,
+          },
+        ]);
+      }
       setError(null);
       return true;
     } catch (err) {

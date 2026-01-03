@@ -3,6 +3,7 @@
 // ============================================
 import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
+import { useSavedItems } from "@/hooks/useSavedItems";
 import { supabase } from "@/integrations/supabase/client";
 import { router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -66,6 +67,7 @@ export default function PostDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
   const { deletePost } = usePosts();
+  const { saveItem, removeItem, isSaved: checkIsSaved } = useSavedItems();
   const isOwner = user && post && user.id === post.user_id;
 
   // ✅ Initialize video player correctly - will be set when post loads
@@ -80,6 +82,14 @@ export default function PostDetailScreen() {
   useEffect(() => {
     fetchPost();
   }, [id]);
+
+  // ✅ استعادة حالة الحفظ من قاعدة البيانات عند التحميل
+  useEffect(() => {
+    if (id) {
+      const saved = checkIsSaved(id, "post");
+      setIsSaved(saved);
+    }
+  }, [id, checkIsSaved]);
 
   const fetchPost = async () => {
     if (!id) return;
@@ -100,6 +110,9 @@ export default function PostDetailScreen() {
         console.error("Error fetching post:", error);
       } else {
         setPost(data);
+        // ✅ استعادة حالة الحفظ بعد تحميل البيانات
+        const saved = checkIsSaved(id, "post");
+        setIsSaved(saved);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -265,7 +278,20 @@ export default function PostDetailScreen() {
               <Share2 size={20} color="#000" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setIsSaved(!isSaved)}
+              onPress={async () => {
+                if (!id) return;
+                try {
+                  if (checkIsSaved(id, "post")) {
+                    const success = await removeItem(id, "post");
+                    if (success) setIsSaved(false);
+                  } else {
+                    const success = await saveItem(id, "post");
+                    if (success) setIsSaved(true);
+                  }
+                } catch (error) {
+                  Alert.alert("Error", "Failed to save post");
+                }
+              }}
               style={styles.iconButton}
             >
               <Bookmark
